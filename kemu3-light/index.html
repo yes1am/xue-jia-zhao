@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科目三灯光考试练习</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .title {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .progress {
+            background: #f0f0f0;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .timer {
+            font-size: 48px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin: 20px 0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .play-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .play-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .option-btn {
+            background: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            padding: 12px 8px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #2c3e50;
+        }
+
+        .option-btn:hover {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .option-btn:disabled {
+            background: #ecf0f1;
+            color: #bdc3c7;
+            cursor: not-allowed;
+            border-color: #bdc3c7;
+        }
+
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .restart-btn {
+            background: linear-gradient(45deg, #27ae60, #229954);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+            
+            .timer {
+                font-size: 36px;
+            }
+            
+            .options {
+                grid-template-columns: 1fr;
+            }
+            
+            .option-btn {
+                font-size: 16px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">科目三灯光考试练习</h1>
+        
+        <div class="progress" id="progress">准备开始考试</div>
+        
+        <div class="timer" id="timer"></div>
+        
+        <button class="play-btn" id="playBtn" onclick="startExam()">开始考试</button>
+        
+        <div class="options" id="options">
+            <button class="option-btn" onclick="selectAnswer('近光灯')">近光灯</button>
+            <button class="option-btn" onclick="selectAnswer('小灯')">小灯</button>
+            <button class="option-btn" onclick="selectAnswer('远光灯')">远光灯</button>
+            <button class="option-btn" onclick="selectAnswer('远近光灯闪两下')">远近光灯闪两下</button>
+            <button class="option-btn" onclick="selectAnswer('关闭所有灯光')">关闭所有灯光</button>
+        </div>
+        
+        <div class="result hidden" id="result"></div>
+        
+        <button class="restart-btn hidden" id="restartBtn" onclick="restartExam()">重新开始</button>
+    </div>
+
+    <script>
+        // 考试状态
+        let currentExam = {
+            isActive: false,
+            currentStep: 0,
+            selectedQuestions: [],
+            totalQuestions: 7, // 1开始 + 5随机 + 1结束
+            correctAnswers: 0,
+            timer: null,
+            timeLeft: 5,
+            audio: null
+        };
+
+        // 音频文件答案映射
+        const audioAnswers = [
+            '近光灯',    // 1.请开启前照灯.mov
+            '近光灯',    // 2.会车.mov
+            '近光灯',    // 3.通过有交通信号灯控制的路口.mov
+            '近光灯',    // 4.夜间同方向近距离跟车行驶.mov
+            '近光灯',    // 5.在有路灯照明良好的道路行驶.mov
+            '远光灯',    // 6.进入无照明或照明不良的道路行驶.mov
+            '小灯',      // 7.在路边临时停车.mov
+            '远近光灯闪两下', // 8.超车.mov
+            '远近光灯闪两下', // 9.通过急弯.mov
+            '远近光灯闪两下', // 10.通过坡路.mov
+            '远近光灯闪两下', // 11.通过拱桥.mov
+            '远近光灯闪两下', // 12.通过没有交通信号灯控制的路口.mov
+            '远近光灯闪两下', // 13.通过人行横道.mov
+            '关闭所有灯光'  // 14.请关闭所有灯光.mov
+        ];
+
+        // DOM元素
+        const progressEl = document.getElementById('progress');
+        const timerEl = document.getElementById('timer');
+        const playBtn = document.getElementById('playBtn');
+        const optionsEl = document.getElementById('options');
+        const resultEl = document.getElementById('result');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // 开始考试
+        function startExam() {
+            currentExam.isActive = true;
+            currentExam.currentStep = 0;
+            currentExam.correctAnswers = 0;
+            
+            // 生成随机题目：从2-13中随机选择5个
+            const availableQuestions = Array.from({length: 12}, (_, i) => i + 1); // 2-13
+            currentExam.selectedQuestions = [0]; // 开始题目（第1题）
+            
+            // 随机选择5个题目
+            for (let i = 0; i < 5; i++) {
+                const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+                currentExam.selectedQuestions.push(availableQuestions[randomIndex]);
+                availableQuestions.splice(randomIndex, 1);
+            }
+            
+            currentExam.selectedQuestions.push(13); // 结束题目（第14题）
+            currentExam.totalQuestions = currentExam.selectedQuestions.length;
+            
+            // 隐藏开始按钮，显示选项
+            playBtn.classList.add('hidden');
+            optionsEl.classList.remove('hidden');
+            
+            // 开始第一题
+            playAudio(0);
+        }
+
+        // 播放音频
+        function playAudio(stepIndex) {
+            const audioIndex = currentExam.selectedQuestions[stepIndex];
+            currentExam.currentStep = stepIndex;
+            
+            // 更新进度
+            progressEl.textContent = `第 ${stepIndex + 1}/${currentExam.totalQuestions} 题`;
+            
+            // 禁用选项按钮
+            disableOptions(true);
+            
+            // 音频文件名映射
+            const audioFileNames = [
+                "1.请开启前照灯.mov",
+                "2.会车.mov",
+                "3.通过有交通信号灯控制的路口.mov",
+                "4.夜间同方向近距离跟车行驶.mov",
+                "5.在有路灯照明良好的道路行驶.mov",
+                "6.进入无照明或照明不良的道路行驶.mov",
+                "7.在路边临时停车.mov",
+                "8.超车.mov",
+                "9.通过急弯.mov",
+                "10.通过坡路.mov",
+                "11.通过拱桥.mov",
+                "12.通过没有交通信号灯控制的路口.mov",
+                "13.通过人行横道.mov",
+                "14.请关闭所有灯光.mov"
+            ];
+            
+            // 停止之前的音频
+            if (currentExam.audio) {
+                currentExam.audio.pause();
+                currentExam.audio = null;
+            }
+            
+            // 创建音频元素并播放
+            currentExam.audio = new Audio(`audio/${audioFileNames[audioIndex]}`);
+            currentExam.audio.preload = "auto";
+            
+            currentExam.audio.oncanplaythrough = function() {
+                currentExam.audio.play();
+            };
+            
+            currentExam.audio.onended = function() {
+                // 音频播放结束后开始计时
+                startTimer();
+            };
+            
+            currentExam.audio.onerror = function() {
+                // 如果音频播放失败，使用模拟方式
+                console.log(`音频播放失败，模拟播放音频: ${audioIndex + 1}.mov`);
+                setTimeout(() => {
+                    startTimer();
+                }, 3000);
+            };
+        }
+
+        // 开始计时
+        function startTimer() {
+            currentExam.timeLeft = 5;
+            timerEl.textContent = currentExam.timeLeft;
+            
+            // 启用选项按钮
+            disableOptions(false);
+            
+            currentExam.timer = setInterval(() => {
+                currentExam.timeLeft--;
+                timerEl.textContent = currentExam.timeLeft;
+                
+                if (currentExam.timeLeft <= 0) {
+                    clearInterval(currentExam.timer);
+                    // 超时，视为答错
+                    selectAnswer('');
+                }
+            }, 1000);
+        }
+
+        // 禁用/启用选项按钮
+        function disableOptions(disable) {
+            const buttons = optionsEl.querySelectorAll('.option-btn');
+            buttons.forEach(btn => btn.disabled = disable);
+        }
+
+        // 选择答案
+        function selectAnswer(answer) {
+            if (!currentExam.isActive) return;
+            
+            clearInterval(currentExam.timer);
+            
+            const audioIndex = currentExam.selectedQuestions[currentExam.currentStep];
+            const correctAnswer = audioAnswers[audioIndex];
+            
+            // 检查答案
+            if (answer === correctAnswer) {
+                currentExam.correctAnswers++;
+                showAnswerResult(true, correctAnswer);
+            } else {
+                showAnswerResult(false, correctAnswer);
+                // 答错立即结束考试
+                setTimeout(() => {
+                    endExam(false);
+                }, 2000);
+                return;
+            }
+            
+            // 继续下一题
+            setTimeout(() => {
+                if (currentExam.currentStep < currentExam.totalQuestions - 1) {
+                    playAudio(currentExam.currentStep + 1);
+                } else {
+                    // 考试完成
+                    endExam(true);
+                }
+            }, 1500);
+        }
+
+        // 显示答题结果
+        function showAnswerResult(isCorrect, correctAnswer) {
+            resultEl.classList.remove('hidden', 'success', 'error');
+            if (isCorrect) {
+                resultEl.classList.add('success');
+                resultEl.textContent = '✓ 回答正确！';
+            } else {
+                resultEl.classList.add('error');
+                resultEl.textContent = `✗ 回答错误！正确答案是：${correctAnswer}`;
+            }
+            
+            setTimeout(() => {
+                resultEl.classList.add('hidden');
+            }, 1500);
+        }
+
+        // 结束考试
+        function endExam(isSuccess) {
+            currentExam.isActive = false;
+            
+            if (currentExam.audio) {
+                currentExam.audio.pause();
+                currentExam.audio = null;
+            }
+            
+            clearInterval(currentExam.timer);
+            
+            // 显示最终结果
+            resultEl.classList.remove('hidden', 'success', 'error');
+            if (isSuccess) {
+                resultEl.classList.add('success');
+                resultEl.textContent = `🎉 考试通过！答对了 ${currentExam.correctAnswers}/${currentExam.totalQuestions} 题`;
+            } else {
+                resultEl.classList.add('error');
+                resultEl.textContent = `❌ 考试失败！答对了 ${currentExam.correctAnswers}/${currentExam.totalQuestions} 题`;
+            }
+            
+            // 隐藏选项，显示重新开始按钮
+            optionsEl.classList.add('hidden');
+            restartBtn.classList.remove('hidden');
+            timerEl.textContent = '';
+            progressEl.textContent = '考试结束';
+        }
+
+        // 重新开始考试
+        function restartExam() {
+            // 重置状态
+            currentExam = {
+                isActive: false,
+                currentStep: 0,
+                selectedQuestions: [],
+                totalQuestions: 7,
+                correctAnswers: 0,
+                timer: null,
+                timeLeft: 5,
+                audio: null
+            };
+            
+            // 重置UI
+            resultEl.classList.add('hidden');
+            restartBtn.classList.add('hidden');
+            playBtn.classList.remove('hidden');
+            progressEl.textContent = '准备开始考试';
+            timerEl.textContent = '';
+            
+            // 停止音频
+            if (currentExam.audio) {
+                currentExam.audio.pause();
+                currentExam.audio = null;
+            }
+            
+            clearInterval(currentExam.timer);
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', function() {
+            console.log('科目三灯光考试练习页面已加载');
+        });
+    </script>
+</body>
+</html>
